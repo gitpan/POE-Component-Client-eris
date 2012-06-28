@@ -1,3 +1,5 @@
+# ABSTRACT: POE Component for reading eris events
+
 package POE::Component::Client::eris;
 
 use warnings;
@@ -9,54 +11,9 @@ use POE qw(
 	Component::Client::TCP
 );
 
-=head1 NAME
 
-POE::Component::Client::eris - POE eris Session!
+our $VERSION = '0.7';
 
-=head1 VERSION
-
-Version 0.01
-
-=cut
-
-our $VERSION = '0.6';
-
-=head1 SYNOPSIS
-
-POE session for integration with the eris event correlation engine.
-
-    use POE::Component::Client::eris;
-
-    my $eris_sess_id = POE::Component::Client::eris->spawn(
-			RemoteAddress		=> 'localhost', 	#default
-			RemotePort			=> '9514',		 	#default
-			Alias				=> 'eris_client',	#default
-			Subscribe			=> [qw(snort dhcpd)],				# REQUIRED (and/or Match)
-			Match				=> [qw(devbox1 myusername error)],	# REQUIRED (and/or Subscribe)
-			MessageHandler		=> sub { ... },		 # REQUIRED
-	);
-    ...
-	POE::Kernel->run();
-
-=head1 EXPORT
-
-POE::Component::Client::eris does not export any symbols.
-
-=head1 FUNCTIONS
-
-=head2 spawn
-
-Creates the POE::Session for the eris correlator.
-
-Parameters:
-	RemoteAddress		=> 'localhost', 	#default
-	RemotePort			=> '9514',		 	#default
-	Alias				=> 'eris_client',	#default
-	Subscribe			=> [qw(snort dhcpd)],				# REQUIRED (and/or Match)
-	Match				=> [qw(devbox1 myusername error)],	# REQUIRED (and/or Subscribe)
-	MessageHandler		=> sub { ... },		 # REQUIRED
-
-=cut
 
 sub spawn {
 	my $type = shift;
@@ -85,7 +42,7 @@ sub spawn {
 			$heap->{readyState} = 0;
 			$heap->{connected} = 0;
 			$kernel->delay( 'do_setup_pipe' => 1 );
-		},	
+		},
 		ConnectError	=> sub {
 			my ($kernel,$syscall,$errid,$errstr) = @_[KERNEL,ARG0,ARG1,ARG2];
 			carp "Connection Error ($errid) at $syscall: $errstr\n";
@@ -98,7 +55,7 @@ sub spawn {
 		ServerError		=> sub  {
 			my ($kernel,$syscall,$errid,$errstr) = @_[KERNEL,ARG0,ARG1,ARG2];
 			carp "Server Error ($errid) at $syscall: $errstr\n";
-			$kernel->delay('reconnect' => 1);
+			$kernel->delay('reconnect' => 5);
 		},
 		#
 		# Handle messages from the server.
@@ -190,6 +147,63 @@ sub spawn {
 	return $tcp_sessid;
 }
 
+
+1; # End of POE::Component::Client::eris
+
+__END__
+=pod
+
+=head1 NAME
+
+POE::Component::Client::eris - POE Component for reading eris events
+
+=head1 VERSION
+
+version 0.7
+
+=head1 SYNOPSIS
+
+POE session for integration with the eris event correlation engine.
+
+    use POE::Component::Client::eris;
+
+    my $eris_sess_id = POE::Component::Client::eris->spawn(
+			RemoteAddress		=> 'localhost', 	#default
+			RemotePort			=> '9514',		 	#default
+			Alias				=> 'eris_client',	#default
+			Subscribe			=> [qw(snort dhcpd)],				# REQUIRED (and/or Match)
+			Match				=> [qw(devbox1 myusername error)],	# REQUIRED (and/or Subscribe)
+			MessageHandler		=> sub { ... },		 # REQUIRED
+	);
+    ...
+	POE::Kernel->run();
+
+=head1 NAME
+
+POE::Component::Client::eris - POE eris Session!
+
+=head1 VERSION
+
+Version 0.7
+
+=head1 EXPORT
+
+POE::Component::Client::eris does not export any symbols.
+
+=head1 FUNCTIONS
+
+=head2 spawn
+
+Creates the POE::Session for the eris correlator.
+
+Parameters:
+	RemoteAddress		=> 'localhost', 	#default
+	RemotePort			=> '9514',		 	#default
+	Alias				=> 'eris_client',	#default
+	Subscribe			=> [qw(snort dhcpd)],				# REQUIRED (and/or Match)
+	Match				=> [qw(devbox1 myusername error)],	# REQUIRED (and/or Subscribe)
+	MessageHandler		=> sub { ... },		 # REQUIRED
+
 =head1 AUTHOR
 
 Brad Lhotsky, C<< <lhotskyb at mail.nih.gov> >>
@@ -239,6 +253,17 @@ Copyright 2007 Brad Lhotsky, all rights reserved.
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
 
+=head1 AUTHOR
+
+Brad Lhotsky <brad@divisionbyzero.net>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2012 by Brad Lhotsky.
+
+This is free software, licensed under:
+
+  The (three-clause) BSD License
+
 =cut
 
-1; # End of POE::Component::Client::eris
