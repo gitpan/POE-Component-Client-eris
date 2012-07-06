@@ -12,7 +12,7 @@ use POE qw(
 );
 
 
-our $VERSION = '0.7';
+our $VERSION = '0.8';
 
 
 sub spawn {
@@ -105,7 +105,7 @@ sub spawn {
 
 				# Send the Subscription
 				$kernel->yield( do_subscribe => \@subs ) if @subs;
-				$kernel->yield( do_matches => \@subs ) if @matches;
+				$kernel->yield( do_match => \@subs ) if @matches;
 			},
 			do_subscribe	=> sub {
 				my ($kernel,$heap,$subs) = @_[KERNEL,HEAP,ARG0];
@@ -159,7 +159,7 @@ POE::Component::Client::eris - POE Component for reading eris events
 
 =head1 VERSION
 
-version 0.7
+version 0.8
 
 =head1 SYNOPSIS
 
@@ -184,7 +184,7 @@ POE::Component::Client::eris - POE eris Session!
 
 =head1 VERSION
 
-Version 0.7
+Version 0.8
 
 =head1 EXPORT
 
