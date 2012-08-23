@@ -12,7 +12,7 @@ use POE qw(
 );
 
 
-our $VERSION = '0.8';
+our $VERSION = '0.9';
 
 
 sub spawn {
@@ -159,7 +159,7 @@ POE::Component::Client::eris - POE Component for reading eris events
 
 =head1 VERSION
 
-version 0.8
+version 0.9
 
 =head1 SYNOPSIS
 
@@ -184,7 +184,7 @@ POE::Component::Client::eris - POE eris Session!
 
 =head1 VERSION
 
-Version 0.8
+Version 0.9
 
 =head1 EXPORT
 
@@ -206,7 +206,7 @@ Parameters:
 
 =head1 AUTHOR
 
-Brad Lhotsky, C<< <lhotskyb at mail.nih.gov> >>
+Brad Lhotsky, C<< <brad.lhotsky at gmail.com> >>
 
 =head1 BUGS
 
