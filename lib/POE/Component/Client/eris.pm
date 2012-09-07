@@ -11,8 +11,7 @@ use POE qw(
 	Component::Client::TCP
 );
 
-
-our $VERSION = '0.9';
+our $VERSION = '1.0';
 
 
 sub spawn {
@@ -124,7 +123,15 @@ sub spawn {
 			},
 			handle_message	=> sub {
 				my ($kernel,$heap,$instr) = @_[KERNEL,HEAP,ARG0];
-				my $msg = parse_syslog_line($instr);
+
+                my $msg = undef;
+                eval {
+                    no warnings;
+				    $msg = parse_syslog_line($instr);
+                };
+                if($@ || !defined $msg) {
+                    return;
+                }
 
 				if( ref $args{MessageHandler} ne 'CODE' ) {
 					croak "You need to specify a subroutine reference to the 'MessageHandler' parameter.\n";
@@ -159,7 +166,7 @@ POE::Component::Client::eris - POE Component for reading eris events
 
 =head1 VERSION
 
-version 0.9
+version 1.0
 
 =head1 SYNOPSIS
 
@@ -177,14 +184,6 @@ POE session for integration with the eris event correlation engine.
 	);
     ...
 	POE::Kernel->run();
-
-=head1 NAME
-
-POE::Component::Client::eris - POE eris Session!
-
-=head1 VERSION
-
-Version 0.9
 
 =head1 EXPORT
 
