@@ -8,7 +8,6 @@ README
 README.mkdn
 dist.ini
 lib/POE/Component/Client/eris.pm
-scripts/eris-syslog-ng.pl
 t/00-compile.t
 t/00-load.t
 t/boilerplate.t

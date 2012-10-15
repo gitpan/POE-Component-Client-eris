@@ -11,7 +11,7 @@ use POE qw(
 	Component::Client::TCP
 );
 
-our $VERSION = '1.0';
+our $VERSION = '1.1';
 
 
 sub spawn {
@@ -96,15 +96,24 @@ sub spawn {
 				my ($kernel,$heap) = @_[KERNEL,HEAP];
 
 				# Parse for Subscriptions or Matches
-				my @subs = map { lc } ( ref $args{Subscribe} eq 'ARRAY' ? @{ $args{Subscribe} } : $args{Subscribe} );
-				my @matches = map { lc } ( ref $args{Match} eq 'ARRAY' ? @{ $args{Match} } : $args{Match} );
+                my %data = ();
+                foreach my $target (qw(Subscribe Match)) {
+                    if( exists $args{$target} && defined $args{$target} ) {
+                        my @data = ref $args{$target} eq 'ARRAY' ? @{ $args{$target} } : $args{$target};
+                        @data = map { lc } @data if $target eq 'Subscribe';
+                        next unless scalar @data > 0;
+                        $data{$target} = \@data;
+                    }
+                }
 
 				# Check to make sure we're doing something
-				croak "Must specify a subscription or a match parameter!\n" unless (@subs + @matches);
+				croak "Must specify a subscription or a match parameter!\n" unless keys %data;
 
 				# Send the Subscription
-				$kernel->yield( do_subscribe => \@subs ) if @subs;
-				$kernel->yield( do_match => \@subs ) if @matches;
+                foreach my $target (sort { $a cmp $b } keys %data) {
+                    my $subname = "do_" . lc $target;
+				    $kernel->yield( $subname => $data{$target} );
+                }
 			},
 			do_subscribe	=> sub {
 				my ($kernel,$heap,$subs) = @_[KERNEL,HEAP,ARG0];
@@ -158,6 +167,7 @@ sub spawn {
 1; # End of POE::Component::Client::eris
 
 __END__
+
 =pod
 
 =head1 NAME
@@ -166,7 +176,7 @@ POE::Component::Client::eris - POE Component for reading eris events
 
 =head1 VERSION
 
-version 1.0
+version 1.1
 
 =head1 SYNOPSIS
 
@@ -184,6 +194,8 @@ POE session for integration with the eris event correlation engine.
 	);
     ...
 	POE::Kernel->run();
+
+For use with a server running the POE::Component::Server::eris output.
 
 =head1 EXPORT
 
@@ -241,6 +253,10 @@ L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=POE-Component-Client-eris>
 
 L<http://search.cpan.org/dist/POE-Component-Client-eris>
 
+=item * See also
+
+L<http://search.cpan.org/dist/POE-Component-Server-eris>
+
 =back
 
 =head1 ACKNOWLEDGEMENTS
@@ -265,4 +281,3 @@ This is free software, licensed under:
   The (three-clause) BSD License
 
 =cut
-
