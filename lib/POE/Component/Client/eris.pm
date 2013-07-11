@@ -9,9 +9,10 @@ use Parse::Syslog::Line;
 
 use POE qw(
     Component::Client::TCP
+    Filter::Stream
 );
 
-our $VERSION = '1.2';
+our $VERSION = '1.4';
 
 
 sub spawn {
@@ -30,17 +31,21 @@ sub spawn {
         @_
     );
 
+    my $block = $args{ReturnType} eq 'block';
+    my $separator = $block ? "\n" : '';
+
     #
     # Build the client connection
     my $tcp_sessid = POE::Component::Client::TCP->new(
         Alias           => $args{Alias},
         RemoteAddress   => $args{RemoteAddress},
         RemotePort      => $args{RemotePort},
-        Filter          => 'POE::Filter::Line',
+        Filter          => $block ? 'POE::Filter::Stream' : 'POE::Filter::Line',
         Connected       => sub {
             my ($kernel,$heap) = @_[KERNEL,HEAP];
             $heap->{readyState} = 0;
             $heap->{connected} = 0;
+            $heap->{buffer} = '';
             $kernel->delay( 'do_setup_pipe' => 1 );
         },
         ConnectError    => sub {
@@ -65,7 +70,7 @@ sub spawn {
         #   handle_unknown (out of order input)
         ServerInput     => sub {
             my ($kernel,$heap,$instr) = @_[KERNEL,HEAP,ARG0];
-            chomp $instr;
+            chomp $instr unless $block;
             if( $heap->{readyState} == 1 ) {
                 $kernel->yield('handle_message' => $instr);
             }
@@ -120,16 +125,16 @@ sub spawn {
                 my ($kernel,$heap,$subs) = @_[KERNEL,HEAP,ARG0];
 
                 if( grep /^fullfeed$/, @{ $subs } ) {
-                    $heap->{server}->put('fullfeed');
+                    $heap->{server}->put('fullfeed' . $separator);
                 }
                 else {
-                    $heap->{server}->put('sub ' . join(', ', @{ $subs }) );
+                    $heap->{server}->put('sub ' . join(', ', @{ $subs }) . $separator );
                 }
             },
             do_match    => sub {
                 my ($kernel,$heap,$matches) = @_[KERNEL,HEAP,ARG0];
 
-                $heap->{server}->put('match ' . join(', ', @{ $matches }) );
+                $heap->{server}->put('match ' . join(', ', @{ $matches }) . $separator );
             },
             handle_message  => sub {
                 my ($kernel,$heap,$instr) = @_[KERNEL,HEAP,ARG0];
@@ -137,6 +142,18 @@ sub spawn {
                 my $msg = undef;
                 if( $args{ReturnType} eq 'string' ) {
                     $msg = $instr;
+                }
+                elsif( $args{ReturnType} eq 'block' ) {
+                    my $index = rindex $instr, "\n";
+
+                    if( $index == -1 ) {
+                        $heap->{buffer} .= $instr;
+                        return;
+                    }
+                    else {
+                        $msg = $heap->{buffer} . substr $instr, 0, $index + 1;
+                        $heap->{buffer} = substr $instr, $index + 1;
+                    }
                 }
                 else {
                     eval {
@@ -182,7 +199,7 @@ POE::Component::Client::eris - POE Component for reading eris events
 
 =head1 VERSION
 
-version 1.2
+version 1.4
 
 =head1 SYNOPSIS
 
@@ -221,10 +238,6 @@ Parameters:
     Match               => [qw(devbox1 myusername error)],  # REQUIRED (and/or Subscribe)
     MessageHandler      => sub { ... },      # REQUIRED
     ReturnType          => 'hash',           # default, or 'string'
-
-=head1 AUTHOR
-
-Brad Lhotsky, C<< <brad.lhotsky at gmail.com> >>
 
 =head1 BUGS
 
